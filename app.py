@@ -45,6 +45,8 @@ def get_required_tools(state: AppState):
     for tool in (parsed_data).keys():
         if parsed_data[tool] == "Required":
             reqdTools.append(tool)
+
+    print(f"\nRequired tools are: {reqdTools}\n")
     return {"reqdTools": reqdTools}
 
 
@@ -83,28 +85,28 @@ def call_tool_node(state: AppState):
         )
         state["messages"].append(HumanMessage(prompt))
         output = structured_llm.invoke(state["messages"])
-        print(output)
+        print(f"\nExtracted tool args for tool {tool}: {output}\n")
         for key, val in output.items():
             toolargs[key] = val
         missing_params = check_missing(output, tool)
         while len(missing_params):
-            toolargs = {}
-            ai_response = f"""
-            The following parameters were found missing that is required to exectute this function named: {tool} please provide them:
-            {missing_params}.\n You can use natural language or any format to give these values.
+            toolargstemp = {}
+            ai_response = f"""\n
+The following parameters were found missing that is required to exectute this function named: {tool} please provide them:
+{missing_params}.\n You can use natural language or any format to give these values.
             """
             state["messages"].append(AIMessage(ai_response))
             print(ai_response)
             user_response = input()
 
             for param in missing_params:
-                toolargs[param] = Field(
+                toolargstemp[param] = Field(
                     f"It is a parameter of function {tool}. Name of parameter is {param} and its datatype is {func_params[param].annotation}. Please return None if that required value of that parameter is missing in user query or context."
                 )
                 param_list += f"{param}: {func_params[param].annotation}"
 
             class ToolArgs:
-                toolArgs = toolargs
+                toolArgs = toolargstemp
 
             structured_llm = llm.with_structured_output(ToolArgs)
             prompt_template = PromptTemplate(
@@ -124,7 +126,7 @@ def call_tool_node(state: AppState):
             )
             state["messages"].append(HumanMessage(prompt))
             output = structured_llm.invoke(state["messages"])
-            print(output)
+            print(f"Extracted tool args for tool {tool}: {output}\n")
             missing_params = check_missing(output, tool)
             for key, val in output.items():
                 toolargs[key] = val
@@ -172,11 +174,11 @@ graph.set_finish_point("final_response_node")
 app = graph.compile()
 
 os.system("clear")
-print("Hello please enter your query: ")
+print("Hello please enter your query: \n ")
 while True:
-
+    print("Human: ")
     user_msg = input()
 
     state = app.invoke({"user_message": user_msg})
 
-    print(f"Response of AI:\n {state['result']}")
+    print(f"Response of AI:\n {state['result']}\n")
