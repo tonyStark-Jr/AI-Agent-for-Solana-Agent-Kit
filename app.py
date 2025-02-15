@@ -175,10 +175,13 @@ app = graph.compile()
 
 os.system("clear")
 print("Hello please enter your query: \n ")
+state = AppState()
 while True:
     print("Human: ")
     user_msg = input()
 
-    state = app.invoke({"user_message": user_msg})
+    state["user_message"] = user_msg
+
+    state = app.invoke(state)
 
     print(f"Response of AI:\n {state['result']}\n")
