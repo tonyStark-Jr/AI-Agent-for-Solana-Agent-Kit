@@ -59,6 +59,7 @@ Instructions:
 	2.	Extract values for the given parameters from the query and previous messages in the conversation.
 	3.	Return all parameters of the function in specific datatypes as stated above only if they are present in the context return None else.
  	4. If any parameter is not found in user's request or in the previous conversation than return None in place of it.
+	5. Your task is to only extract parameters of function dont call the tools.
 """
 
 
@@ -78,6 +79,7 @@ Instructions:
 	2.	Extract values for the given parameters from the query and previous messages in the conversation.
 	3.	Return all parameters of the function in specific datatypes as stated above.
 	4. If any parameter is not found in user's response than return None in place of it.
+ 	5. Your task is to only extract parameters of function dont call the tools.
 """
 
 final_system_template = """
