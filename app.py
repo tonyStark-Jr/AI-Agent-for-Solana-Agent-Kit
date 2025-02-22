@@ -5,7 +5,7 @@ warnings.filterwarnings("ignore")
 from langchain_groq import ChatGroq
 from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
-from langgraph.graph import END, StateGraph
+from langgraph.graph import StateGraph
 from langchain_core.messages import ToolMessage, HumanMessage, SystemMessage, AIMessage
 import os
 from classes import *
@@ -13,9 +13,14 @@ from prompts import *
 from tools import *
 from langchain.pydantic_v1 import Field
 import inspect
+from agentipy import SolanaAgentKit
 
 
 load_dotenv()
+solana_agent = SolanaAgentKit(
+    private_key=os.getenv("SOL_PRIVATE_KEY"),
+    rpc_url="https://api.devnet.solana.com",
+)
 x = 0
 llm = ChatGroq(
     model="llama-3.3-70b-versatile",
@@ -130,8 +135,8 @@ The following parameters were found missing that is required to exectute this fu
             missing_params = check_missing(output, tool)
             for key, val in output.items():
                 toolargs[key] = val
-
-        tool_output = tool_func_dict[tool](*toolargs.values())
+        toolargs["solana_agent"] = solana_agent
+        tool_output = tool_func_dict[tool](**toolargs)
 
         state["messages"].append(ToolMessage(content=tool_output, tool_call_id=x))
         actions_dict[tool] = tool_output
@@ -176,12 +181,13 @@ app = graph.compile()
 os.system("clear")
 print("Hello please enter your query: \n ")
 state = AppState()
-while True:
-    print("Human: ")
-    user_msg = input()
+if __name__ == "__main__":
+    while True:
+        print("Human: ")
+        user_msg = input()
 
-    state["user_message"] = user_msg
+        state["user_message"] = user_msg
 
-    state = app.invoke(state)
+        state = app.invoke(state)
 
-    print(f"Response of AI:\n {state['result']}\n")
+        print(f"Response of AI:\n {state['result']}\n")
