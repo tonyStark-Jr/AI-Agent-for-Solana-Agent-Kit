@@ -14,8 +14,10 @@ from tools import *
 from langchain.pydantic_v1 import Field
 import inspect
 from agentipy import SolanaAgentKit
+import asyncio
 
-
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
 load_dotenv()
 solana_agent = SolanaAgentKit(
     private_key=os.getenv("SOL_PRIVATE_KEY"),
@@ -64,6 +66,8 @@ def call_tool_node(state: AppState):
         param_list = ""
         toolargs = {}
         for param in func_params.keys():
+            if param == "solana_agent":
+                continue
             toolargs[param] = Field(
                 f"It is a parameter of function {tool}. Name of parameter is {param} and its datatype is {func_params[param].annotation}. Please return None if that required value of that parameter is missing in user query or context."
             )
@@ -97,8 +101,8 @@ def call_tool_node(state: AppState):
         while len(missing_params):
             toolargstemp = {}
             ai_response = f"""\n
-The following parameters were found missing that is required to exectute this function named: {tool} please provide them:
-{missing_params}.\n You can use natural language or any format to give these values.
+The following parameters were found missing that is required to exectute this function named: {tool} please provide them:\n
+"{", ".join(missing_params)}"\nYou can use natural language or any format to give these values.
             """
             state["messages"].append(AIMessage(ai_response))
             print(ai_response)
@@ -136,10 +140,26 @@ The following parameters were found missing that is required to exectute this fu
             for key, val in output.items():
                 toolargs[key] = val
         toolargs["solana_agent"] = solana_agent
-        tool_output = tool_func_dict[tool](**toolargs)
+        # output_generator = tool_func_dict[tool](**toolargs)
+        try:
 
-        state["messages"].append(ToolMessage(content=tool_output, tool_call_id=x))
-        actions_dict[tool] = tool_output
+            task = loop.create_task(tool_func_dict[tool](**toolargs))  # Create task
+            output = loop.run_until_complete(task)  # Run until the task completes
+            output_content = f"Output for call of {tool} tool: {output}"
+
+        except Exception as e:
+            output_content = (
+                f"Some error occured while calling {tool} tool. Error message: {e}"
+            )
+        print(output_content)
+
+        state["messages"].append(
+            ToolMessage(
+                content=output_content,
+                tool_call_id=x,
+            )
+        )
+        actions_dict[tool] = output_content
 
         x += 1
     return {"actions_summary": actions_dict}
@@ -189,5 +209,5 @@ if __name__ == "__main__":
         state["user_message"] = user_msg
 
         state = app.invoke(state)
-
+        print(state["actions_summary"])
         print(f"Response of AI:\n {state['result']}\n")

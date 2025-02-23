@@ -57,7 +57,7 @@ async def transfer(
     """
     Simulates transferring SOL or SPL tokens to a recipient.
     """
-    coroutine = solana_agent.get_token_data_by_address(to=to, amount=amount, mint=mint)
+    coroutine = solana_agent.transfer(to=to, amount=amount, mint=mint)
     output = await asyncio.gather(coroutine)
     return output
 
