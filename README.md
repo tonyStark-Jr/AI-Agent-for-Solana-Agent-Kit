@@ -2,6 +2,8 @@
 
 An intelligent AI-powered interface for interacting with the Solana blockchain, featuring both CLI and Streamlit web applications. This project uses LangChain and Groq to provide natural language processing capabilities for Solana blockchain operations.
 
+Demo link: https://drive.google.com/file/d/1icfC9zZ_lqcZRLVnKVftRh8gmRFUGdgr/view?usp=sharing
+
 ## 🚀 Features
 
 - Natural language processing for Solana blockchain operations
