@@ -1,3 +1,6 @@
+import streamlit as st
+import textwrap
+
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -15,6 +18,7 @@ from langchain.pydantic_v1 import Field
 import inspect
 from agentipy import SolanaAgentKit
 import asyncio
+import time
 
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
@@ -24,6 +28,8 @@ solana_agent = SolanaAgentKit(
     rpc_url="https://api.devnet.solana.com",
 )
 x = 0
+
+
 llm = ChatGroq(
     model="llama-3.3-70b-versatile",
     temperature=0,
@@ -98,59 +104,22 @@ def call_tool_node(state: AppState):
         for key, val in output.items():
             toolargs[key] = val
         missing_params = check_missing(output, tool)
-        while len(missing_params):
-            toolargstemp = {}
-            ai_response = f"""\n
-The following parameters were found missing that is required to exectute this function named: {tool} please provide them:\n
-"{", ".join(missing_params)}"\nYou can use natural language or any format to give these values.
-            """
-            state["messages"].append(AIMessage(ai_response))
-            print(ai_response)
-            user_response = input()
+        if len(missing_params):
+            output_content = f"We cannot call this {tool} tool. Since some of the parameters were missing and cannot be parsed. list of mission params={missing_params}. Please re enter them in next message."
+        else:
+            toolargs["solana_agent"] = solana_agent
+            print(toolargs)
+            # output_generator = tool_func_dict[tool](**toolargs)
+            try:
+                task = loop.create_task(tool_func_dict[tool](**toolargs))  # Create task
+                output = loop.run_until_complete(task)  # Run until the task completes
+                output_content = f"Output for call of {tool} tool: {output}"
 
-            for param in missing_params:
-                toolargstemp[param] = Field(
-                    f"It is a parameter of function {tool}. Name of parameter is {param} and its datatype is {func_params[param].annotation}. Please return None if that required value of that parameter is missing in user query or context."
+            except Exception as e:
+                output_content = (
+                    f"Some error occured while calling {tool} tool. Error message: {e}"
                 )
-                param_list += f"{param}: {func_params[param].annotation}"
 
-            class ToolArgs:
-                toolArgs = toolargstemp
-
-            structured_llm = llm.with_structured_output(ToolArgs)
-            prompt_template = PromptTemplate(
-                input_variables=[
-                    "function_name",
-                    "function_use",
-                    "parameter_list",
-                    "user_response",
-                ],
-                template=missingToolCallPrompt,
-            )
-            prompt = prompt_template.format(
-                function_name=tool,
-                function_use=tool_func_dict[tool].__doc__,
-                parameter_list=missing_params,
-                user_response=user_response,
-            )
-            state["messages"].append(HumanMessage(prompt))
-            output = structured_llm.invoke(state["messages"])
-            print(f"Extracted tool args for tool {tool}: {output}\n")
-            missing_params = check_missing(output, tool)
-            for key, val in output.items():
-                toolargs[key] = val
-        toolargs["solana_agent"] = solana_agent
-        # output_generator = tool_func_dict[tool](**toolargs)
-        try:
-
-            task = loop.create_task(tool_func_dict[tool](**toolargs))  # Create task
-            output = loop.run_until_complete(task)  # Run until the task completes
-            output_content = f"Output for call of {tool} tool: {output}"
-
-        except Exception as e:
-            output_content = (
-                f"Some error occured while calling {tool} tool. Error message: {e}"
-            )
         print(output_content)
 
         state["messages"].append(
@@ -175,9 +144,14 @@ def final_response_node(state: AppState):
         user_query=state["user_message"], actions_summary=str(state["actions_summary"])
     )
 
-    output = llm.invoke([sys_message] + [HumanMessage(prompt)])
-    state["messages"].append(output.content)
-    return {"result": output.content}
+    structured_llm = llm.with_structured_output(FinalReport)
+
+    output = structured_llm.invoke(
+        state["messages"] + [sys_message] + [HumanMessage(prompt)]
+    )
+    state["messages"].append(AIMessage(str(dict(output))))
+
+    return {"result": output, "final_report": output}
 
 
 graph = StateGraph(AppState)
@@ -198,16 +172,47 @@ graph.set_finish_point("final_response_node")
 
 app = graph.compile()
 
-os.system("clear")
-print("Hello please enter your query: \n ")
+graph_app = graph.compile()
+png_graph = graph_app.get_graph().draw_mermaid_png()
+
 state = AppState()
-if __name__ == "__main__":
-    while True:
-        print("Human: ")
-        user_msg = input()
 
-        state["user_message"] = user_msg
+st.title("AI Agent for Solana ToolKit")
 
-        state = app.invoke(state)
-        print(state["actions_summary"])
-        print(f"Response of AI:\n {state['result']}\n")
+# st.subheader("Enter Your Prompt")
+user_query = st.text_input("Enter Your Prompt")
+
+# Process Query Button
+if st.button("Get Response"):
+    if user_query:
+        state["user_message"] = user_query
+
+        try:
+            state = app.invoke(state)
+            with st.expander("⚙️ Actions Performed (Click to expand)"):
+                action_report = state["final_report"].actionAnalysis
+                for line in action_report.split("\n"):
+                    st.write(textwrap.fill(line, 80))
+
+            st.subheader("📢 Response")
+            final_response = state["final_report"].finalResponse
+            for line in final_response.split("\n"):
+                st.write(textwrap.fill(line, 80))
+        except Exception as e:
+            template = PromptTemplate(
+                input_variables=["ERROR_MESSAGE"], template=error_handler_template
+            )
+            prompt = template.format(ERROR_MESSAGE=repr(e))
+
+            output = llm.invoke(prompt)
+            final_response = output.content
+            for line in final_response.split("\n"):
+                st.write(textwrap.fill(line, 80))
+
+    else:
+        st.error("Please enter a query.")
+
+
+# Footer
+st.markdown("---")
+st.markdown("Developed by Prakhar Shukla with ❤️")

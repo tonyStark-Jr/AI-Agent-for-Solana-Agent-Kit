@@ -5,17 +5,12 @@ import operator
 
 
 class toolsReqd(BaseModel):
-
     deployToken: Literal["Required", "Not Required"] = Field(
         """It is a tool that deploys a fungible token on the Solana blockchain using the SolanaAgentKit.
     
     It requires the following parameters:
-    - name: The full name of the token (e.g., "MyToken").
-    - uri: The metadata URI where token info (e.g., icon, description) is stored (usually an Arweave or IPFS link).
-    - symbol: The short symbol of the token (e.g., "MTK").
     - decimals: Defines how many decimal places the token can have (like 9 for SOL, 6 for USDC).
-    - initialSupply (optional): If provided, mints an initial supply of tokens (e.g., 1,000,000 tokens).
-    
+
     Returns:
     - A dictionary containing the mint address of the newly created token.
       Example:
@@ -48,15 +43,14 @@ class toolsReqd(BaseModel):
     """
     )
 
-    getTokenAddressFromTicker: Literal["Required", "Not Required"] = Field(
-        """Fetches the mint address of a token based on its ticker symbol using the DexScreener API.
+    getTickerInformation: Literal["Required", "Not Required"] = Field(
+        """Get ticker information for a specific symbol.
 
     It requires the following parameter:
     - ticker: The token's symbol (e.g., "SOL", "USDC", "BONK").
     
     Returns:
-    - A string representing the **mint address** of the token if found.
-    - `None` if no matching token is found.
+    dict: Ticker information for the specified symbol.
     """
     )
 
@@ -136,6 +130,20 @@ class toolsReqd(BaseModel):
     )
 
 
+class FinalReport(BaseModel):
+    actionAnalysis: str = Field(
+        """
+Analyze the actions and describe what was ultimately achieved. Please do proper analysis of the tools response and tell the user what happened if action is not completed please tell about that also. Analysis should be in points instead of a paragraph. It should be string datatype only.
+"""
+    )
+
+    finalResponse: str = Field(
+        """
+Based on the final summary, provide a clear response that confirms the completion of the request. It should be string only.
+"""
+    )
+
+
 class AppState(TypedDict):
 
     messages: Annotated[List[AnyMessage], operator.add]
@@ -143,3 +151,4 @@ class AppState(TypedDict):
     user_message: str
     actions_summary: dict
     result: str
+    final_report: FinalReport

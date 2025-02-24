@@ -135,7 +135,7 @@ def check_missing(data, func):
     missing_params = []
     for param, value in data.items():
         func_params = inspect.signature(tool_func_dict[func]).parameters
-        if value is None or value == "None":
+        if value is None or value == "None" or value == "nill":
             if "optional" in str(func_params[param].annotation).lower():
                 pass
             else:
