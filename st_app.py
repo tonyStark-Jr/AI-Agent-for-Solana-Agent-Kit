@@ -102,7 +102,8 @@ def call_tool_node(state: AppState):
         output = structured_llm.invoke(state["messages"])
         print(f"\nExtracted tool args for tool {tool}: {output}\n")
         for key, val in output.items():
-            toolargs[key] = val
+            if val != "None":
+                toolargs[key] = val
         missing_params = check_missing(output, tool)
         if len(missing_params):
             output_content = f"We cannot call this {tool} tool. Since some of the parameters were missing and cannot be parsed. list of mission params={missing_params}. Please re enter them in next message."
