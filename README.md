@@ -60,6 +60,7 @@ cd solana-agent-toolkit
 4. Create a `.env` file in the root directory:
 `GROQ_API_KEY=your_groq_api_key`
 `SOL_PRIVATE_KEY=your_solana_private_key`
+
  
 ## 🚀 Usage
 
@@ -74,6 +75,8 @@ Run the Streamlit app:
 Run the CLI application:
 `python cli_app.py`
 
+## Langgraph Architecture
+![Langgraph architecture](./my_graph.png)
 
 ## 📁 Project Structure
 Solana-agent-toolkit/ <br>
