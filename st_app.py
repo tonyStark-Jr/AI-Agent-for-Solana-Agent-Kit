@@ -21,19 +21,19 @@ import asyncio
 
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
-load_dotenv()
+load_dotenv(override=True)
 solana_agent = SolanaAgentKit(
     private_key=os.getenv("SOL_PRIVATE_KEY"),
     rpc_url="https://api.devnet.solana.com",
 )
-print(os.getenv("GROQ_API_KEY2"))
+# print(os.getenv("GROQ_API_KEY2"))
 x = 0
 
 
 llm = ChatGroq(
     model="llama-3.3-70b-versatile",
     temperature=0,
-    api_key=os.getenv("GROQ_API_KEY2"),
+    api_key=os.getenv("GROQ_API_KEY"),
 )
 
 
