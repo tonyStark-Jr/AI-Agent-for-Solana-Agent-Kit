@@ -1,4 +1,3 @@
-import random
 from typing import Optional, Dict, Any
 import inspect
 from agentipy import SolanaAgentKit

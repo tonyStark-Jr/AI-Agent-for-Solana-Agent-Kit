@@ -18,7 +18,6 @@ from langchain.pydantic_v1 import Field
 import inspect
 from agentipy import SolanaAgentKit
 import asyncio
-import time
 
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
@@ -27,6 +26,7 @@ solana_agent = SolanaAgentKit(
     private_key=os.getenv("SOL_PRIVATE_KEY"),
     rpc_url="https://api.devnet.solana.com",
 )
+print(os.getenv("GROQ_API_KEY"))
 x = 0
 
 

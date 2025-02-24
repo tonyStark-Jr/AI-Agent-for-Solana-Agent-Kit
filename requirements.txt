@@ -2,3 +2,6 @@ langchain
 langgraph
 langchain-groq
 langchain_community
+agentipy
+streamlit
+python-dotenv
