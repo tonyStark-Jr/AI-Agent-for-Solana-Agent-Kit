@@ -26,14 +26,14 @@ solana_agent = SolanaAgentKit(
     private_key=os.getenv("SOL_PRIVATE_KEY"),
     rpc_url="https://api.devnet.solana.com",
 )
-print(os.getenv("GROQ_API_KEY"))
+print(os.getenv("GROQ_API_KEY2"))
 x = 0
 
 
 llm = ChatGroq(
     model="llama-3.3-70b-versatile",
     temperature=0,
-    api_key=os.getenv("GROQ_API_KEY"),
+    api_key=os.getenv("GROQ_API_KEY2"),
 )
 
 
@@ -101,10 +101,15 @@ def call_tool_node(state: AppState):
         state["messages"].append(HumanMessage(prompt))
         output = structured_llm.invoke(state["messages"])
         print(f"\nExtracted tool args for tool {tool}: {output}\n")
+        toolargs = {}
         for key, val in output.items():
             if val != "None":
+                print("obj: ", key, val)
                 toolargs[key] = val
         missing_params = check_missing(output, tool)
+
+        print(toolargs)
+
         if len(missing_params):
             output_content = f"We cannot call this {tool} tool. Since some of the parameters were missing and cannot be parsed. list of mission params={missing_params}. Please re enter them in next message."
         else:
